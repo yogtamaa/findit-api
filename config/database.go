@@ -51,15 +51,23 @@ func ConnectDatabase() *gorm.DB {
 
 	log.Println("✅ Berhasil terhubung ke database MySQL")
 
-	// Auto-migrate tables
-	err = database.AutoMigrate(
-		&models.LostItem{},
-		&models.FoundItem{},
-	)
-	if err != nil {
-		log.Printf("⚠️ Gagal melakukan auto migration: %v\n", err)
-	} else {
-		log.Println("✅ Auto migration tabel (lost_items & found_items) berhasil!")
+	// Auto-migrate is OFF by default because the schema is already finalized
+	// and was set up by hand — we don't want GORM silently altering it.
+	// Set AUTO_MIGRATE=true in .env only if you intentionally want GORM to
+	// create missing tables/columns based on the models below.
+	if os.Getenv("AUTO_MIGRATE") == "true" {
+		err = database.AutoMigrate(
+			&models.User{},
+			&models.Category{},
+			&models.Report{},
+			&models.Match{},
+			&models.Notification{},
+		)
+		if err != nil {
+			log.Printf("⚠️ Gagal melakukan auto migration: %v\n", err)
+		} else {
+			log.Println("✅ Auto migration (users, categories, reports, matches, notifications) berhasil!")
+		}
 	}
 
 	DB = database

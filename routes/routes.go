@@ -37,24 +37,33 @@ func SetupRouter() *gin.Engine {
 		// Health check
 		api.GET("/health", handlers.GetHealth)
 
-		// Legacy Items Endpoint
-		api.GET("/items", handlers.GetItems)
-		api.GET("/items/:id", handlers.GetItemByID)
-		api.POST("/items", handlers.CreateItem)
+		// Auth
+		api.POST("/register", handlers.Register)
+		api.POST("/login", handlers.Login)
 
-		// Lost Items CRUD Endpoints
-		api.GET("/lost-items", handlers.GetLostItems)
-		api.GET("/lost-items/:id", handlers.GetLostItemByID)
-		api.POST("/lost-items", handlers.CreateLostItem)
-		api.PUT("/lost-items/:id", handlers.UpdateLostItem)
-		api.DELETE("/lost-items/:id", handlers.DeleteLostItem)
+		// Users
+		api.GET("/users/:id", handlers.GetUserByID)
 
-		// Found Items CRUD Endpoints
-		api.GET("/found-items", handlers.GetFoundItems)
-		api.GET("/found-items/:id", handlers.GetFoundItemByID)
-		api.POST("/found-items", handlers.CreateFoundItem)
-		api.PUT("/found-items/:id", handlers.UpdateFoundItem)
-		api.DELETE("/found-items/:id", handlers.DeleteFoundItem)
+		// Reports (single table for both lost & found, filter with ?type=lost|found)
+		api.GET("/reports", handlers.GetReports)
+		api.GET("/reports/:id", handlers.GetReportByID)
+		api.POST("/reports", handlers.CreateReport)
+		api.PUT("/reports/:id", handlers.UpdateReport)
+		api.DELETE("/reports/:id", handlers.DeleteReport)
+
+		// Categories
+		api.GET("/categories", handlers.GetCategories)
+
+		// Matches
+		api.GET("/matches", handlers.GetMatches)
+		api.GET("/matches/:id", handlers.GetMatchByID)
+		api.POST("/matches", handlers.CreateMatch)
+		api.PUT("/matches/:id", handlers.UpdateMatch)
+
+		// Notifications
+		api.GET("/notifications/user/:userId", handlers.GetNotificationsForUser)
+		api.POST("/notifications", handlers.CreateNotification)
+		api.PUT("/notifications/:id/read", handlers.MarkNotificationRead)
 	}
 
 	return r

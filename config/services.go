@@ -26,4 +26,4 @@ func GetGoAPIBaseURL() string {
 		return "http://localhost:8080/api"
 	}
 	return baseURL
-}
+}
