@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"findit-backend/models"
 	"github.com/joho/godotenv"
@@ -71,5 +73,47 @@ func ConnectDatabase() *gorm.DB {
 	}
 
 	DB = database
+
+	// Configure connection pool for production safety and performance
+	sqlDB, err := database.DB()
+	if err != nil {
+		log.Printf("⚠️ Gagal mendapatkan sql.DB underlying connection: %v\n", err)
+	} else {
+		maxIdle := getEnvAsInt("DB_MAX_IDLE_CONNS", 10)
+		maxOpen := getEnvAsInt("DB_MAX_OPEN_CONNS", 25)
+		maxLifetime := getEnvAsDuration("DB_CONN_MAX_LIFETIME", 15*time.Minute)
+		maxIdleTime := getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute)
+
+		sqlDB.SetMaxIdleConns(maxIdle)
+		sqlDB.SetMaxOpenConns(maxOpen)
+		sqlDB.SetConnMaxLifetime(maxLifetime)
+		sqlDB.SetConnMaxIdleTime(maxIdleTime)
+	}
+
 	return database
 }
+
+func getEnvAsInt(name string, defaultVal int) int {
+	valStr := os.Getenv(name)
+	if valStr == "" {
+		return defaultVal
+	}
+	val, err := strconv.Atoi(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return val
+}
+
+func getEnvAsDuration(name string, defaultVal time.Duration) time.Duration {
+	valStr := os.Getenv(name)
+	if valStr == "" {
+		return defaultVal
+	}
+	d, err := time.ParseDuration(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return d
+}
+

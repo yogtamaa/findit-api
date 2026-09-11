@@ -2,15 +2,42 @@ package routes
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"findit-backend/handlers"
 	"github.com/gin-gonic/gin"
 )
 
-// CORSMiddleware enables CORS for frontend requests
+// CORSMiddleware enables CORS with optional environment-configurable origins
 func CORSMiddleware() gin.HandlerFunc {
+	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
+	var allowedOrigins []string
+	if allowedOriginsEnv != "" {
+		for _, o := range strings.Split(allowedOriginsEnv, ",") {
+			trimmed := strings.TrimSpace(o)
+			if trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	}
+
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := c.Request.Header.Get("Origin")
+		allowOrigin := "*"
+
+		if len(allowedOrigins) > 0 && origin != "" {
+			for _, o := range allowedOrigins {
+				if o == "*" || o == origin {
+					allowOrigin = origin
+					break
+				}
+			}
+		} else if origin != "" {
+			allowOrigin = origin
+		}
+
+		c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
@@ -24,12 +51,24 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
+// SecurityHeadersMiddleware adds basic production security headers
+func SecurityHeadersMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+		c.Writer.Header().Set("X-Frame-Options", "DENY")
+		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
+		c.Writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Next()
+	}
+}
+
 // SetupRouter initializes Gin router and endpoints
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
-	// Apply CORS Middleware
+	// Apply Middlewares
 	r.Use(CORSMiddleware())
+	r.Use(SecurityHeadersMiddleware())
 
 	// API Routes Group
 	api := r.Group("/api")
