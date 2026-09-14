@@ -108,22 +108,28 @@ func UpdateReport(c *gin.Context) {
 		}
 	}
 
-	var input models.Report
-	if err := c.ShouldBindJSON(&input); err != nil {
+	// Parse sebagai map (bukan models.Report) supaya field yang TIDAK dikirim
+	// tidak ikut ditimpa jadi kosong. Cocok untuk update sebagian (misal cuma "status").
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Data input tidak valid: "+err.Error())
 		return
 	}
 
-	if err := config.DB.Model(&report).Updates(map[string]interface{}{
-		"title":         input.Title,
-		"description":   input.Description,
-		"category":      input.Category,
-		"location":      input.Location,
-		"photo_url":     input.PhotoURL,
-		"status":        input.Status,
-		"activity_note": input.ActivityNote,
-		"item_date":     input.ItemDate,
-	}).Error; err != nil {
+	allowedFields := []string{"title", "description", "category", "location", "photo_url", "status", "activity_note", "item_date"}
+	updates := map[string]interface{}{}
+	for _, field := range allowedFields {
+		if val, ok := raw[field]; ok {
+			updates[field] = val
+		}
+	}
+
+	if len(updates) == 0 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Tidak ada field valid untuk diperbarui")
+		return
+	}
+
+	if err := config.DB.Model(&report).Updates(updates).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui laporan")
 		return
 	}
