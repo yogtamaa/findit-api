@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build small static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o findit-api main.go
 
 # Stage 2: Production runtime image
 FROM alpine:3.19
@@ -28,8 +28,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
 # Copy binary from build stage
-COPY --from=builder --chown=appuser:appgroup /app/server /app/server
+COPY --from=builder --chown=appuser:appgroup /app/findit-api /app/findit-api
 
-EXPOSE 8080
+EXPOSE 8094
 
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/findit-api"]

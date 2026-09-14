@@ -18,10 +18,13 @@ func main() {
 	// Initialize database connection and auto migrations
 	config.ConnectDatabase()
 
-	// Port configuration via environment variable or default 8080
-	port := os.Getenv("PORT")
+	// Port configuration via APP_PORT/PORT environment variable or default 8094
+	port := os.Getenv("APP_PORT")
 	if port == "" {
-		port = "8080"
+		port = os.Getenv("PORT")
+	}
+	if port == "" {
+		port = "8094"
 	}
 
 	router := routes.SetupRouter()

@@ -11,7 +11,7 @@ type ServiceConfig struct {
 func LoadServiceConfig() ServiceConfig {
 	baseURL := os.Getenv("GO_API_BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8080/api"
+		baseURL = "http://localhost:8094/api"
 	}
 
 	return ServiceConfig{
@@ -23,7 +23,7 @@ func LoadServiceConfig() ServiceConfig {
 func GetGoAPIBaseURL() string {
 	baseURL := os.Getenv("GO_API_BASE_URL")
 	if baseURL == "" {
-		return "http://localhost:8080/api"
+		return "http://localhost:8094/api"
 	}
 	return baseURL
 }

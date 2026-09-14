@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"findit-backend/config"
+	"findit-backend/middleware"
 	"findit-backend/models"
 	"findit-backend/utils"
 	"github.com/gin-gonic/gin"
@@ -60,6 +61,11 @@ func CreateReport(c *gin.Context) {
 		return
 	}
 
+	// Auto fill UserID from JWT token if available
+	if authID, ok := middleware.GetAuthenticatedUserID(c); ok {
+		report.UserID = authID
+	}
+
 	if report.Status == "" {
 		report.Status = "baru"
 	}
@@ -79,7 +85,7 @@ func CreateReport(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Laporan berhasil dibuat", report)
 }
 
-// UpdateReport handles updating an existing report by ID.
+// UpdateReport handles updating an existing report by ID with ownership verification.
 func UpdateReport(c *gin.Context) {
 	id := c.Param("id")
 	var report models.Report
@@ -91,6 +97,15 @@ func UpdateReport(c *gin.Context) {
 		}
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Terjadi kesalahan pada database")
 		return
+	}
+
+	// Ownership check
+	if authID, ok := middleware.GetAuthenticatedUserID(c); ok {
+		role, _ := middleware.GetAuthenticatedUserRole(c)
+		if report.UserID != authID && role != "admin" {
+			utils.ErrorResponse(c, http.StatusForbidden, "Akses ditolak: Anda tidak memiliki wewenang untuk mengubah laporan ini")
+			return
+		}
 	}
 
 	var input models.Report
@@ -117,7 +132,7 @@ func UpdateReport(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Berhasil memperbarui laporan", report)
 }
 
-// DeleteReport deletes a report by ID.
+// DeleteReport deletes a report by ID with ownership verification.
 func DeleteReport(c *gin.Context) {
 	id := c.Param("id")
 	var report models.Report
@@ -129,6 +144,15 @@ func DeleteReport(c *gin.Context) {
 		}
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Terjadi kesalahan pada database")
 		return
+	}
+
+	// Ownership check
+	if authID, ok := middleware.GetAuthenticatedUserID(c); ok {
+		role, _ := middleware.GetAuthenticatedUserRole(c)
+		if report.UserID != authID && role != "admin" {
+			utils.ErrorResponse(c, http.StatusForbidden, "Akses ditolak: Anda tidak memiliki wewenang untuk menghapus laporan ini")
+			return
+		}
 	}
 
 	if err := config.DB.Delete(&report).Error; err != nil {

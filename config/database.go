@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"findit-backend/models"
+
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -28,17 +30,25 @@ func ConnectDatabase() *gorm.DB {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
+	missing := []string{}
 	if dbHost == "" {
-		dbHost = "127.0.0.1"
+		missing = append(missing, "DB_HOST")
 	}
 	if dbPort == "" {
-		dbPort = "3306"
+		missing = append(missing, "DB_PORT")
 	}
 	if dbUser == "" {
-		dbUser = "root"
+		missing = append(missing, "DB_USER")
+	}
+	if dbPassword == "" {
+		missing = append(missing, "DB_PASSWORD")
 	}
 	if dbName == "" {
-		dbName = "findit"
+		missing = append(missing, "DB_NAME")
+	}
+
+	if len(missing) > 0 {
+		log.Fatalf("❌ Konfigurasi database belum lengkap, env wajib kosong: %s", strings.Join(missing, ", "))
 	}
 
 	// Format Data Source Name (DSN)
@@ -46,9 +56,35 @@ func ConnectDatabase() *gorm.DB {
 		dbUser, dbPassword, dbHost, dbPort, dbName,
 	)
 
-	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	maxRetries := getEnvAsInt("DB_CONNECT_RETRIES", 10)
+	retryDelay := getEnvAsDuration("DB_CONNECT_RETRY_DELAY", 3*time.Second)
+
+	var database *gorm.DB
+	var err error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		database, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		if err == nil {
+			sqlDB, dbErr := database.DB()
+			if dbErr == nil {
+				err = sqlDB.Ping()
+			} else {
+				err = dbErr
+			}
+		}
+
+		if err == nil {
+			break
+		}
+
+		log.Printf("⚠️ Gagal konek database (attempt %d/%d): %v", attempt, maxRetries, err)
+		if attempt < maxRetries {
+			time.Sleep(retryDelay)
+		}
+	}
+
 	if err != nil {
-		log.Fatalf("❌ Gagal terhubung ke database MySQL: %v", err)
+		log.Fatalf("❌ Gagal terhubung ke database MySQL setelah %d percobaan: %v", maxRetries, err)
 	}
 
 	log.Println("✅ Berhasil terhubung ke database MySQL")

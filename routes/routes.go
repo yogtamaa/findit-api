@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"findit-backend/handlers"
+	"findit-backend/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -70,6 +71,13 @@ func SetupRouter() *gin.Engine {
 	r.Use(CORSMiddleware())
 	r.Use(SecurityHeadersMiddleware())
 
+	// Static file server for uploaded images
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./uploads"
+	}
+	r.Static("/uploads", uploadDir)
+
 	// API Routes Group
 	api := r.Group("/api")
 	{
@@ -80,29 +88,41 @@ func SetupRouter() *gin.Engine {
 		api.POST("/register", handlers.Register)
 		api.POST("/login", handlers.Login)
 
-		// Users
-		api.GET("/users/:id", handlers.GetUserByID)
-
-		// Reports (single table for both lost & found, filter with ?type=lost|found)
-		api.GET("/reports", handlers.GetReports)
-		api.GET("/reports/:id", handlers.GetReportByID)
-		api.POST("/reports", handlers.CreateReport)
-		api.PUT("/reports/:id", handlers.UpdateReport)
-		api.DELETE("/reports/:id", handlers.DeleteReport)
-
-		// Categories
+		// Categories (Public)
 		api.GET("/categories", handlers.GetCategories)
 
-		// Matches
+		// Users (Public read)
+		api.GET("/users/:id", handlers.GetUserByID)
+
+		// Reports (Public read)
+		api.GET("/reports", handlers.GetReports)
+		api.GET("/reports/:id", handlers.GetReportByID)
+
+		// Matches (Public read)
 		api.GET("/matches", handlers.GetMatches)
 		api.GET("/matches/:id", handlers.GetMatchByID)
-		api.POST("/matches", handlers.CreateMatch)
-		api.PUT("/matches/:id", handlers.UpdateMatch)
 
-		// Notifications
-		api.GET("/notifications/user/:userId", handlers.GetNotificationsForUser)
-		api.POST("/notifications", handlers.CreateNotification)
-		api.PUT("/notifications/:id/read", handlers.MarkNotificationRead)
+		// Protected Routes (JWT required)
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			// Image Upload
+			protected.POST("/upload", handlers.UploadImage)
+
+			// Reports Write
+			protected.POST("/reports", handlers.CreateReport)
+			protected.PUT("/reports/:id", handlers.UpdateReport)
+			protected.DELETE("/reports/:id", handlers.DeleteReport)
+
+			// Matches Write
+			protected.POST("/matches", handlers.CreateMatch)
+			protected.PUT("/matches/:id", handlers.UpdateMatch)
+
+			// Notifications
+			protected.GET("/notifications/user/:userId", handlers.GetNotificationsForUser)
+			protected.POST("/notifications", handlers.CreateNotification)
+			protected.PUT("/notifications/:id/read", handlers.MarkNotificationRead)
+		}
 	}
 
 	return r

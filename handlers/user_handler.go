@@ -60,10 +60,7 @@ func Register(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Akun berhasil dibuat", user)
 }
 
-// Login verifies email + password and returns the user profile.
-// NOTE: this MVP does not issue a JWT/session token yet — it only
-// confirms the credentials are correct. Add token issuance before
-// using this in a real production login flow.
+// Login verifies email + password and returns the user profile with a JWT.
 func Login(c *gin.Context) {
 	var input loginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -86,7 +83,16 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Login berhasil", user)
+	token, err := utils.GenerateToken(user.ID, user.Email, user.Role)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat token otentikasi")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Login berhasil", gin.H{
+		"token": token,
+		"user":  user,
+	})
 }
 
 // GetUserByID retrieves a single user profile (password is never included, see models.User json tags).
