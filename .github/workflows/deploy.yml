@@ -74,9 +74,22 @@ jobs:
               exit 1
             fi
 
+            # Hapus container lama yang dibuat via docker run (bukan compose)
+            docker rm -f findit-api 2>/dev/null || true
+
             # Build and restart containers
-            docker compose down
+            docker compose down --remove-orphans || true
             docker compose up -d --build
+            docker compose ps
+
+            # Tunggu API siap (max ~60s)
+            for i in $(seq 1 30); do
+              if curl -fsS "http://localhost:${APP_PORT:-8094}/" >/dev/null 2>&1; then
+                echo "API is up!"
+                break
+              fi
+              sleep 2
+            done
 
             # Clean up dangling images
             docker image prune -f
