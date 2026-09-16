@@ -14,3 +14,11 @@ services:
       - PORT=${APP_PORT:-8094}
       - DB_CONNECT_RETRIES=${DB_CONNECT_RETRIES:-10}
       - DB_CONNECT_RETRY_DELAY=${DB_CONNECT_RETRY_DELAY:-3s}
+    networks:
+      - default
+      - cashmate
+
+networks:
+  cashmate:
+    external: true
+    name: cashmate-api_cashmate-net
