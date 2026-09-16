@@ -111,6 +111,7 @@ func SetupRouter() *gin.Engine {
 
 			// Reports Write
 			protected.POST("/reports", handlers.CreateReport)
+			protected.POST("/reports/auto-fill", handlers.AutoFillFromPhoto)
 			protected.PUT("/reports/:id", handlers.UpdateReport)
 			protected.DELETE("/reports/:id", handlers.DeleteReport)
 
