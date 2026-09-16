@@ -117,8 +117,8 @@ func ConnectDatabase() *gorm.DB {
 	} else {
 		maxIdle := getEnvAsInt("DB_MAX_IDLE_CONNS", 10)
 		maxOpen := getEnvAsInt("DB_MAX_OPEN_CONNS", 25)
-		maxLifetime := getEnvAsDuration("DB_CONN_MAX_LIFETIME", 15*time.Minute)
-		maxIdleTime := getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute)
+		maxLifetime := getEnvAsDuration("DB_CONN_MAX_LIFETIME", 3*time.Minute)
+		maxIdleTime := getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute)
 
 		sqlDB.SetMaxIdleConns(maxIdle)
 		sqlDB.SetMaxOpenConns(maxOpen)
@@ -152,4 +152,3 @@ func getEnvAsDuration(name string, defaultVal time.Duration) time.Duration {
 	}
 	return d
 }
-
