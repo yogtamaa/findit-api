@@ -25,7 +25,14 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Direktori upload wajib writable oleh appuser; kalau tidak, MkdirAll("./uploads")
+# di dalam /app akan gagal dengan "permission denied".
+RUN mkdir -p /var/lib/findit/uploads && chown -R appuser:appgroup /var/lib/findit/uploads
+
 USER appuser
+
+ENV UPLOAD_DIR=/var/lib/findit/uploads
 
 # Copy binary from build stage
 COPY --from=builder --chown=appuser:appgroup /app/findit-api /app/findit-api

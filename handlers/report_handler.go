@@ -116,7 +116,7 @@ func UpdateReport(c *gin.Context) {
 		return
 	}
 
-	allowedFields := []string{"title", "description", "category", "location", "photo_url", "status", "activity_note", "item_date"}
+	allowedFields := []string{"title", "description", "category", "room_number", "location", "photo_url", "status", "activity_note", "item_date"}
 	updates := map[string]interface{}{}
 	for _, field := range allowedFields {
 		if val, ok := raw[field]; ok {

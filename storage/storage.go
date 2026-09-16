@@ -33,11 +33,17 @@ type LocalStorageProvider struct {
 	MaxSizeBytes int64
 }
 
-// NewLocalStorageProvider initializes LocalStorageProvider using environment variables
+// NewLocalStorageProvider initializes LocalStorageProvider using environment variables.
+// Bila UPLOAD_DIR berupa path relatif (default "./uploads"), di-resolve ke path
+// absolut terhadap working directory proses pada saat startup, supaya lokasi
+// penyimpanan konsisten dan tidak bergantung pada perubahan cwd.
 func NewLocalStorageProvider() *LocalStorageProvider {
 	uploadDir := os.Getenv("UPLOAD_DIR")
 	if uploadDir == "" {
 		uploadDir = "./uploads"
+	}
+	if abs, err := filepath.Abs(uploadDir); err == nil {
+		uploadDir = abs
 	}
 
 	baseURL := os.Getenv("STORAGE_BASE_URL")
@@ -57,6 +63,19 @@ func NewLocalStorageProvider() *LocalStorageProvider {
 		BaseURL:      strings.TrimRight(baseURL, "/"),
 		MaxSizeBytes: maxMB * 1024 * 1024,
 	}
+}
+
+// EnsureDir memastikan direktori upload sudah tersedia dan writable.
+// Dipanggil saat startup (lihat routes.SetupRouter) dan sebelum menulis file,
+// supaya masalah izin langsung terlihat dengan pesan yang actionable.
+func (p *LocalStorageProvider) EnsureDir() error {
+	if err := os.MkdirAll(p.UploadDir, 0755); err != nil {
+		return fmt.Errorf(
+			"gagal membuat direktori penyimpan %q: %w (pastikan proses punya izin tulis, atau set env UPLOAD_DIR ke path absolut yang writable)",
+			p.UploadDir, err,
+		)
+	}
+	return nil
 }
 
 // SaveFile validates and saves an uploaded file securely
@@ -111,8 +130,8 @@ func (p *LocalStorageProvider) SaveFile(fileHeader *multipart.FileHeader) (strin
 	newFilename := fmt.Sprintf("%s%s", utils.NewUUID(), ext)
 
 	// 7. Ensure upload directory exists
-	if err := os.MkdirAll(p.UploadDir, 0755); err != nil {
-		return "", fmt.Errorf("gagal membuat direktori penyimpan: %w", err)
+	if err := p.EnsureDir(); err != nil {
+		return "", err
 	}
 
 	// 8. Create target file path safely

@@ -1,12 +1,14 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"strings"
 
 	"findit-backend/handlers"
 	"findit-backend/middleware"
+	"findit-backend/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -71,12 +73,14 @@ func SetupRouter() *gin.Engine {
 	r.Use(CORSMiddleware())
 	r.Use(SecurityHeadersMiddleware())
 
-	// Static file server for uploaded images
-	uploadDir := os.Getenv("UPLOAD_DIR")
-	if uploadDir == "" {
-		uploadDir = "./uploads"
-	}
-	r.Static("/uploads", uploadDir)
+	// Static file server for uploaded images.
+// Konfigurasi penyimpanan dibaca lewat storage provider yang sama dengan yang
+// dipakai handler upload, supaya tidak ada duplikasi logika (UPLOAD_DIR/STORAGE_BASE_URL).
+storageProvider := storage.NewLocalStorageProvider()
+if err := storageProvider.EnsureDir(); err != nil {
+	log.Printf("⚠️ Upload storage belum siap: %v\n", err)
+}
+r.Static(storageProvider.BaseURL, storageProvider.UploadDir)
 
 	// API Routes Group
 	api := r.Group("/api")

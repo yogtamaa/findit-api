@@ -13,6 +13,7 @@ type Report struct {
 	Title            string     `gorm:"type:varchar(255);not null" json:"title" binding:"required"`
 	Description      string     `gorm:"type:text" json:"description"`
 	Category         string     `gorm:"type:varchar(100)" json:"category"`
+	RoomNumber       string     `gorm:"column:room_number;type:varchar(50)" json:"room_number"`
 	Location         string     `gorm:"type:varchar(255)" json:"location"`
 	PhotoURL         string     `gorm:"column:photo_url;type:varchar(255)" json:"photo_url"`
 	Status           string     `gorm:"type:varchar(30);default:'baru'" json:"status"`

@@ -12,11 +12,17 @@ services:
     environment:
       - APP_ENV=production
       - PORT=${APP_PORT:-8094}
+      - UPLOAD_DIR=/var/lib/findit/uploads
       - DB_CONNECT_RETRIES=${DB_CONNECT_RETRIES:-10}
       - DB_CONNECT_RETRY_DELAY=${DB_CONNECT_RETRY_DELAY:-3s}
+    volumes:
+      - findit-uploads:/var/lib/findit/uploads
     networks:
       - default
       - cashmate
+
+volumes:
+  findit-uploads:
 
 networks:
   cashmate:
