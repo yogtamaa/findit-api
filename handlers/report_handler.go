@@ -32,10 +32,12 @@ func GetReports(c *gin.Context) {
 		return
 	}
 
-	// Normalisasi status kosong -> "baru". Migrasi schema live masih belum
-	// sinkron dengan models.Report (kolom status dibuat manual); perbaikan
-	// permanen: ALTER TABLE reports MODIFY COLUMN status VARCHAR(30)
-	// NOT NULL DEFAULT 'baru';
+	// Normalisasi status kosong -> "baru" sebagai defensive fallback untuk
+	// data legacy/nyasar (mis. row yang tersimpan sebelum perbaikan header,
+	// atau client lama yang mengirim status ""). Akar masalah sebenarnya bukan
+	// schema DB: kolom `status` sudah VARCHAR(30) DEFAULT 'baru' dan handler
+	// create sudah set "baru" sebelum INSERT. Kode ini tetap dipertahankan
+	// supaya respons konsisten walau ada row dengan status kosong di DB.
 	for i := range reports {
 		if reports[i].Status == "" {
 			reports[i].Status = "baru"
