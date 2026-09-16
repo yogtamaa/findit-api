@@ -32,6 +32,16 @@ func GetReports(c *gin.Context) {
 		return
 	}
 
+	// Normalisasi status kosong -> "baru". Migrasi schema live masih belum
+	// sinkron dengan models.Report (kolom status dibuat manual); perbaikan
+	// permanen: ALTER TABLE reports MODIFY COLUMN status VARCHAR(30)
+	// NOT NULL DEFAULT 'baru';
+	for i := range reports {
+		if reports[i].Status == "" {
+			reports[i].Status = "baru"
+		}
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, "Berhasil mengambil daftar laporan", reports)
 }
 
@@ -47,6 +57,9 @@ func GetReportByID(c *gin.Context) {
 		}
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil detail laporan")
 		return
+	}
+	if report.Status == "" {
+		report.Status = "baru"
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Berhasil mengambil detail laporan", report)
@@ -135,6 +148,9 @@ func UpdateReport(c *gin.Context) {
 	}
 
 	config.DB.First(&report, id)
+	if report.Status == "" {
+		report.Status = "baru"
+	}
 	utils.SuccessResponse(c, http.StatusOK, "Berhasil memperbarui laporan", report)
 }
 
