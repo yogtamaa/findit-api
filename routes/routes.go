@@ -123,6 +123,13 @@ r.Static(storageProvider.BaseURL, storageProvider.UploadDir)
 			protected.POST("/matches", handlers.CreateMatch)
 			protected.PUT("/matches/:id", handlers.UpdateMatch)
 
+			// Users / Pekerja Management (admin only — guard di handler)
+			// Route static "/users/list" menang mengalahkan ":id", jadi
+			// permintaan GET /users/list tidak lagi masuk GetUserByID.
+			protected.GET("/users/list", handlers.GetWorkers)
+			protected.PUT("/users/:id", handlers.UpdateUser)
+			protected.DELETE("/users/:id", handlers.DeleteUser)
+
 			// Notifications
 			protected.GET("/notifications/user/:userId", handlers.GetNotificationsForUser)
 			protected.POST("/notifications", handlers.CreateNotification)
